@@ -40,6 +40,7 @@ Use `./dot update --packages` only when intentionally upgrading Pi packages. It 
 - Put original global extensions under `home/.pi/agent/extensions/`.
 - Put reusable skills in `home/.pi/agent/skills/<name>/SKILL.md`; use `home/.pi/agent/prompts/<name>.md` only when a direct `/<name>` command is useful.
 - Keep generated reports and other skill output outside the repository unless the user explicitly requests tracked artifacts.
+- Keep `pi-tidy-tools` on native Pi execution. Do not enable its optional `pi-fff` integration: its settings-scope safety rejects this repository's intentionally symlinked global settings file.
 - Do not copy unlicensed third-party extension source. Reimplement ideas independently.
 - Keep credentials in environment variables or ignored local auth files.
 

@@ -4,10 +4,6 @@
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
   "packages": [
-    {
-      "source": "npm:@ff-labs/pi-fff",
-      "extensions": []
-    },
     "npm:@henryqw/pi-herdr",
     "npm:@ogulcancelik/pi-ghostty-theme-sync",
     "npm:@mobrienv/pi-tidy-tools",

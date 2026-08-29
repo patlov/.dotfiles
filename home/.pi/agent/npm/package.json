@@ -2,7 +2,6 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@ff-labs/pi-fff": "^0.10.5",
     "@henryqw/pi-herdr": "^0.4.1",
     "@juicesharp/rpiv-ask-user-question": "^2.7.1",
     "@juicesharp/rpiv-todo": "^2.7.1",
