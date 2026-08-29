@@ -48,6 +48,17 @@ This command links only `home/.pi` into `~/.pi`, reuses Node.js 22.20 or newer w
 
 The Pi configuration includes `pi-extmgr`, Plannotator, `/save-md`, Git editor/hook protections, staged secret scanning, and secret cloaking for tool output.
 
+## Update
+
+```sh
+dot update             # Pull and apply the repository's recorded state
+dot update --packages  # Also upgrade configured Pi packages
+```
+
+A normal update requires a clean dotfiles worktree, pulls with `--ff-only`, updates submodules, links any new Pi configuration, restores locked dependencies, and refreshes the `dot` link. Existing symlinked non-Pi configuration updates automatically when the repository changes; run `dot stow` if an update adds a new non-Pi home file.
+
+Package upgrades are opt-in because they may modify the tracked Pi package manifest or lockfile. Review and commit those changes after `dot update --packages`.
+
 ## Commands
 
 ```sh
@@ -55,6 +66,8 @@ dot init            # Complete setup; ask about GitHub SSH
 dot init --ssh      # Complete setup and configure GitHub SSH
 dot init --no-ssh   # Complete setup without GitHub SSH
 dot install pi      # Install and configure only Pi
+dot update          # Pull and apply recorded updates
+dot update --packages # Also upgrade Pi packages
 dot stow            # Re-link configuration
 dot link            # Re-link the dot command
 dot help            # Show command help

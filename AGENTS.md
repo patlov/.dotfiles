@@ -13,11 +13,16 @@ Choose one command based on the user's intent:
 # Existing machine that only needs Pi and its configuration
 ./dot install pi
 
+# Pull and apply the repository's recorded state
+./dot update
+
 # Re-link all tracked home configuration without reinstalling tools
 ./dot stow
 ```
 
 Prefer `./dot install pi` on an already configured work machine. Do not run the full initializer unless the user asks for the complete environment. Existing conflicts are backed up under `~/.dotfiles-backup/`.
+
+Use `./dot update --packages` only when intentionally upgrading Pi packages. It may change tracked manifests or lockfiles, which must be reviewed and committed separately.
 
 ## Repository conventions
 

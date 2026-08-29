@@ -13,6 +13,7 @@ Usage: ./dot <command> [options]
 Commands:
   init [--ssh|--no-ssh]  Install the complete development environment
   install pi              Install Pi and link only its configuration
+  update [--packages]     Pull and apply dotfiles updates
   stow                    Re-link the complete home configuration
   link                    Install the dot command into ~/.local/bin
   help                    Show this help
@@ -345,6 +346,44 @@ install_pi_dependencies() {
   done
 }
 
+update_dotfiles() {
+  local update_packages="no"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --packages) update_packages="yes" ;;
+      *)
+        echo "Unknown update option: $1" >&2
+        echo "Usage: ./dot update [--packages]" >&2
+        exit 2
+        ;;
+    esac
+    shift
+  done
+
+  if [[ -n "$(git -C "$DOTFILES_DIR" status --porcelain)" ]]; then
+    echo "Refusing to update: $DOTFILES_DIR has uncommitted changes." >&2
+    echo "Commit, stash, or discard them first." >&2
+    exit 1
+  fi
+
+  git -C "$DOTFILES_DIR" pull --ff-only
+  git -C "$DOTFILES_DIR" submodule update --init --recursive
+  link_pi_config
+  install_pi_dependencies
+  link_dot
+
+  if [[ "$update_packages" == "yes" ]]; then
+    command -v pi >/dev/null 2>&1 || {
+      echo "Pi is required for --packages. Run: ./dot install pi" >&2
+      exit 1
+    }
+    pi update --extensions
+    echo "Pi packages updated. Review and commit any manifest or lockfile changes."
+  fi
+
+  echo "Dotfiles updated. Run 'dot stow' if the update added non-Pi home files."
+}
+
 install_font() {
   case "$(uname -s)" in
     Darwin)
@@ -491,6 +530,7 @@ case "$command" in
     fi
     install_pi_only
     ;;
+  update) update_dotfiles "$@" ;;
   stow) stow_home ;;
   link) link_dot ;;
   help|-h|--help) usage ;;
