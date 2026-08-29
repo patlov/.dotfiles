@@ -5,6 +5,7 @@ home/.pi/agent/auth.json
 home/.pi/agent/bin/
 home/.pi/agent/fff/
 home/.pi/agent/models-store.json
+home/.pi/agent/pi-tidy-tools.pi-fff.json
 home/.pi/agent/sessions/
 home/.pi/agent/state/
 home/.pi/agent/npm/node_modules/
