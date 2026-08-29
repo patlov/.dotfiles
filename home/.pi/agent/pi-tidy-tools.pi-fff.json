@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "transactionId": "ea5f8739-c980-4484-b72e-1675dd4273cc",
+  "operation": "setup",
+  "phase": "committed",
+  "scope": "user",
+  "settingsPath": "/Users/patlov/.pi/agent/settings.json",
+  "counterpartPaths": [],
+  "priorEntry": "npm:@ff-labs/pi-fff",
+  "managedEntry": {
+    "source": "npm:@ff-labs/pi-fff",
+    "extensions": []
+  },
+  "participants": [
+    {
+      "scope": "user",
+      "packageIdentity": "@ff-labs/pi-fff",
+      "profile": "scoped",
+      "settingsPath": "/Users/patlov/.pi/agent/settings.json",
+      "entryIndex": 0,
+      "priorEntry": "npm:@ff-labs/pi-fff",
+      "managedEntry": {
+        "source": "npm:@ff-labs/pi-fff",
+        "extensions": []
+      }
+    }
+  ]
+}

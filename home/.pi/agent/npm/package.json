@@ -1,0 +1,15 @@
+{
+  "name": "pi-extensions",
+  "private": true,
+  "dependencies": {
+    "@ff-labs/pi-fff": "^0.10.5",
+    "@henryqw/pi-herdr": "^0.4.1",
+    "@juicesharp/rpiv-ask-user-question": "^2.7.1",
+    "@juicesharp/rpiv-todo": "^2.7.1",
+    "@mobrienv/pi-tidy-tools": "^0.4.2",
+    "@ogulcancelik/pi-ghostty-theme-sync": "^0.1.2",
+    "@ogulcancelik/pi-session-recall": "^1.0.7",
+    "pi-eta": "^0.1.1",
+    "pi-mcp-adapter": "^2.31.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "lastChangelogVersion": "0.84.4",
+  "theme": "ghostty-sync-762fe13d",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
+  "packages": [
+    {
+      "source": "npm:@ff-labs/pi-fff",
+      "extensions": []
+    },
+    "npm:@henryqw/pi-herdr",
+    "npm:@ogulcancelik/pi-ghostty-theme-sync",
+    "npm:@mobrienv/pi-tidy-tools",
+    "npm:pi-eta",
+    "npm:@ogulcancelik/pi-session-recall",
+    "npm:@juicesharp/rpiv-ask-user-question",
+    "npm:pi-mcp-adapter",
+    "npm:@juicesharp/rpiv-todo"
+  ]
+}
