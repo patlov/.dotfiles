@@ -8,6 +8,12 @@ export function containsGitCommit(command: string): boolean {
     .some((segment) => /(?:^|\s)git(?:\s|$)/.test(segment) && /(?:^|\s)commit(?:\s|$)/.test(segment));
 }
 
+export function containsGitNoVerify(command: string): boolean {
+  return command
+    .split(/&&|\|\||[;\n]/)
+    .some((segment) => /(?:^|\s)git(?:\s|$)/.test(segment) && /(?:^|\s)--no-verify(?:\s|$)/.test(segment));
+}
+
 export function unsafeCommitShape(command: string): string | undefined {
   if (!containsGitCommit(command)) return undefined;
   const commitIndex = command.search(/(?:^|\s)git[^;&|\n]*\scommit(?:\s|$)/);

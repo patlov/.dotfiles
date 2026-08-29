@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
-import { containsGitCommand, containsGitCommit, unsafeCommitShape } from "./git-command.ts";
+import { containsGitCommand, containsGitCommit, containsGitNoVerify, unsafeCommitShape } from "./git-command.ts";
 import { findSecrets } from "./secret-patterns.ts";
 
 const GIT_ENV_PREFIX =
@@ -57,7 +57,7 @@ export function registerGitInterceptor(pi: ExtensionAPI): void {
     const command = event.input.command;
     if (!containsGitCommand(command)) return;
 
-    if (/--no-verify\b/.test(command)) {
+    if (containsGitNoVerify(command)) {
       return {
         block: true,
         reason: "BLOCKED: agents may not bypass Git hooks with --no-verify. Fix the hook failure instead.",

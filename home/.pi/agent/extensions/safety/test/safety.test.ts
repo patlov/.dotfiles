@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { containsGitCommand, containsGitCommit, unsafeCommitShape } from "../git-command.ts";
+import { containsGitCommand, containsGitCommit, containsGitNoVerify, unsafeCommitShape } from "../git-command.ts";
 import { cloakSecrets, findSecrets } from "../secret-patterns.ts";
 
 const fakeGoogleKey = `AIza${"A".repeat(35)}`;
@@ -27,6 +27,11 @@ test("recognizes git commands and commits", () => {
   assert.equal(containsGitCommand("git status"), true);
   assert.equal(containsGitCommit("git commit -m test"), true);
   assert.equal(containsGitCommand("echo digit"), false);
+});
+
+test("scopes no-verify detection to Git commands", () => {
+  assert.equal(containsGitNoVerify("git commit --no-verify"), true);
+  assert.equal(containsGitNoVerify("grep --no-verify AGENTS.md && git status"), false);
 });
 
 test("requires staging and commit to use separate tool calls", () => {
