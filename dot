@@ -178,6 +178,45 @@ install_oh_my_zsh() {
   fi
 }
 
+current_login_shell() {
+  case "$(uname -s)" in
+    Darwin)
+      dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}'
+      ;;
+    Linux)
+      getent passwd "$USER" | cut -d: -f7
+      ;;
+  esac
+}
+
+set_default_shell() {
+  local zsh_path
+  zsh_path="$(command -v zsh)"
+
+  if [[ "$(current_login_shell)" == "$zsh_path" ]]; then
+    echo "Zsh is already the default login shell."
+    return
+  fi
+
+  if ! grep -Fqx "$zsh_path" /etc/shells; then
+    echo "$zsh_path is not listed in /etc/shells; refusing to select it." >&2
+    exit 1
+  fi
+
+  if [[ ! -t 0 ]]; then
+    echo "Cannot change the login shell non-interactively. Run: chsh -s $zsh_path" >&2
+    return
+  fi
+
+  echo "Setting the default login shell to $zsh_path..."
+  chsh -s "$zsh_path"
+
+  if [[ "$(current_login_shell)" != "$zsh_path" ]]; then
+    echo "The login shell did not change. Run manually: chsh -s $zsh_path" >&2
+    exit 1
+  fi
+}
+
 install_nvm_and_node() {
   export NVM_DIR="$HOME/.nvm"
 
@@ -339,6 +378,7 @@ init() {
   git -C "$DOTFILES_DIR" submodule update --init --recursive
   stow_home
   install_oh_my_zsh
+  set_default_shell
   install_nvm_and_node
   install_pi
   install_pi_dependencies

@@ -25,6 +25,8 @@ The command also:
 
 - links the `home/` configuration tree;
 - installs Oh My Zsh with autosuggestions and syntax highlighting;
+- sets Zsh as the default login shell;
+- configures Ghostty to use JetBrainsMono Nerd Font;
 - installs NVM and the latest Node.js LTS release;
 - installs Pi and restores its configured packages and extension dependencies;
 - asks whether to generate and upload an Ed25519 GitHub SSH key; and
