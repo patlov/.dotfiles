@@ -38,6 +38,8 @@ Use `./dot update --packages` only when intentionally upgrading Pi packages. It 
 
 - Install or remove published Pi packages with `pi install` or `pi remove` so settings and npm manifests stay synchronized.
 - Put original global extensions under `home/.pi/agent/extensions/`.
+- Put reusable skills in `home/.pi/agent/skills/<name>/SKILL.md`; use `home/.pi/agent/prompts/<name>.md` only when a direct `/<name>` command is useful.
+- Keep generated reports and other skill output outside the repository unless the user explicitly requests tracked artifacts.
 - Do not copy unlicensed third-party extension source. Reimplement ideas independently.
 - Keep credentials in environment variables or ignored local auth files.
 

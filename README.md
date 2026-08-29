@@ -48,6 +48,15 @@ This command links only `home/.pi` into `~/.pi`, reuses Node.js 22.20 or newer w
 
 The Pi configuration includes `pi-extmgr`, Plannotator, `/save-md`, Git editor/hook protections, staged secret scanning, and secret cloaking for tool output.
 
+Two reusable skills also provide browsable local reports:
+
+```text
+/architecture-review [scope]  # Review blockers, architecture fit, and overengineering
+/generate-html <request>      # Generate a standalone HTML explanation or report
+```
+
+The generated pages are self-contained and stored under `~/.pi/agent/generated-html/`. The skills are also available through `/skill:architecture-review` and `/skill:generate-html`.
+
 ## Update
 
 ```sh
