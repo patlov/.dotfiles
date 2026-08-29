@@ -3,32 +3,94 @@ set -euo pipefail
 
 DOTFILES_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 HOME_PACKAGE="$DOTFILES_DIR/home"
+NVM_VERSION="v0.40.7"
+PI_PACKAGE="@earendil-works/pi-coding-agent"
 
 usage() {
   cat <<'EOF'
-Usage: ./dot <command>
+Usage: ./dot <command> [options]
 
 Commands:
-  init   Initialize submodules, link configs, and install Pi dependencies
-  stow   Re-link the home configuration
-  link   Install the dot command into ~/.local/bin
-  help   Show this help
+  init [--ssh|--no-ssh]  Install tools, link configs, and optionally set up GitHub SSH
+  stow                   Re-link the home configuration
+  link                   Install the dot command into ~/.local/bin
+  help                   Show this help
+
+By default, dot init asks interactively whether to configure GitHub SSH.
+Use --ssh or --no-ssh to choose explicitly.
 EOF
+}
+
+load_homebrew() {
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [[ -x /usr/local/bin/brew ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+}
+
+install_macos_cask() {
+  local cask="$1"
+  local app_path="$2"
+  if brew list --cask "$cask" >/dev/null 2>&1; then
+    return
+  fi
+  if [[ -d "$app_path" ]]; then
+    echo "Using existing $app_path"
+    return
+  fi
+  brew install --cask "$cask"
+}
+
+install_system_packages() {
+  case "$(uname -s)" in
+    Darwin)
+      load_homebrew
+      if ! command -v brew >/dev/null 2>&1; then
+        echo "Installing Homebrew..."
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        load_homebrew
+      fi
+      command -v brew >/dev/null 2>&1 || {
+        echo "Homebrew installation did not provide a usable brew command." >&2
+        exit 1
+      }
+      brew install stow gh
+      install_macos_cask ghostty /Applications/Ghostty.app
+      install_macos_cask zed /Applications/Zed.app
+      ;;
+    Linux)
+      if ! command -v pacman >/dev/null 2>&1; then
+        echo "Linux bootstrap currently supports Arch Linux through pacman." >&2
+        exit 1
+      fi
+      local packages=(git curl zsh stow github-cli ghostty ttf-jetbrains-mono-nerd zed)
+      if [[ "$EUID" -eq 0 ]]; then
+        pacman -S --needed --noconfirm "${packages[@]}"
+      else
+        command -v sudo >/dev/null 2>&1 || {
+          echo "sudo is required to install pacman packages." >&2
+          exit 1
+        }
+        sudo pacman -S --needed --noconfirm "${packages[@]}"
+      fi
+      ;;
+    *)
+      echo "Unsupported operating system: $(uname -s)" >&2
+      exit 1
+      ;;
+  esac
 }
 
 ensure_stow() {
   if command -v stow >/dev/null 2>&1; then
     return
   fi
-
-  if command -v brew >/dev/null 2>&1; then
-    echo "Installing GNU Stow..."
-    brew install stow
-    return
-  fi
-
-  echo "GNU Stow is required. Install it with your system package manager." >&2
-  exit 1
+  install_system_packages
+  command -v stow >/dev/null 2>&1 || {
+    echo "GNU Stow installation failed." >&2
+    exit 1
+  }
 }
 
 prepare_existing_targets() {
@@ -91,12 +153,57 @@ stow_home() {
   stow --dir="$DOTFILES_DIR" --target="$HOME" --restow --no-folding home
 }
 
-install_pi_dependencies() {
-  if ! command -v npm >/dev/null 2>&1; then
-    echo "Skipping Pi dependencies: npm is not installed." >&2
-    return
+install_oh_my_zsh() {
+  if ! command -v zsh >/dev/null 2>&1; then
+    echo "Zsh is required. Install it with your system package manager." >&2
+    exit 1
   fi
 
+  if [[ ! -d "$HOME/.oh-my-zsh/.git" ]]; then
+    echo "Installing Oh My Zsh..."
+    git clone --depth 1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"
+  fi
+
+  local custom_plugins="$HOME/.oh-my-zsh/custom/plugins"
+  mkdir -p "$custom_plugins"
+
+  if [[ ! -d "$custom_plugins/zsh-autosuggestions/.git" ]]; then
+    git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions.git \
+      "$custom_plugins/zsh-autosuggestions"
+  fi
+
+  if [[ ! -d "$custom_plugins/zsh-syntax-highlighting/.git" ]]; then
+    git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting.git \
+      "$custom_plugins/zsh-syntax-highlighting"
+  fi
+}
+
+install_nvm_and_node() {
+  export NVM_DIR="$HOME/.nvm"
+
+  if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
+    if [[ -e "$NVM_DIR" ]]; then
+      echo "Refusing to replace incomplete NVM directory: $NVM_DIR" >&2
+      exit 1
+    fi
+    echo "Installing NVM $NVM_VERSION..."
+    git clone --depth 1 --branch "$NVM_VERSION" https://github.com/nvm-sh/nvm.git "$NVM_DIR"
+  fi
+
+  # shellcheck source=/dev/null
+  source "$NVM_DIR/nvm.sh"
+  nvm install --lts
+  nvm alias default 'lts/*'
+  nvm use default
+}
+
+install_pi() {
+  echo "Installing Pi..."
+  npm install --global --ignore-scripts "$PI_PACKAGE"
+  command -v pi >/dev/null
+}
+
+install_pi_dependencies() {
   if [[ -f "$HOME/.pi/agent/npm/package.json" ]]; then
     npm install --prefix "$HOME/.pi/agent/npm" --no-audit --no-fund
   fi
@@ -107,6 +214,96 @@ install_pi_dependencies() {
       npm install --prefix "$HOME/.pi/agent/extensions/$extension" --no-audit --no-fund
     fi
   done
+}
+
+install_font() {
+  case "$(uname -s)" in
+    Darwin)
+      if ! brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1; then
+        echo "Installing JetBrainsMono Nerd Font..."
+        brew install --cask font-jetbrains-mono-nerd-font
+      fi
+      ;;
+    Linux)
+      # Installed with the base pacman package set.
+      pacman -Q ttf-jetbrains-mono-nerd >/dev/null 2>&1 || {
+        echo "JetBrainsMono Nerd Font was not installed." >&2
+        exit 1
+      }
+      ;;
+  esac
+}
+
+ensure_gh() {
+  if command -v gh >/dev/null 2>&1; then
+    return
+  fi
+  if command -v brew >/dev/null 2>&1; then
+    brew install gh
+    return
+  fi
+  echo "GitHub CLI is required for SSH key upload." >&2
+  exit 1
+}
+
+setup_github_ssh() {
+  ensure_gh
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+
+  local key="$HOME/.ssh/id_ed25519"
+  local email
+  email="$(git config --global user.email || true)"
+
+  if [[ ! -f "$key" ]]; then
+    if [[ -z "$email" && -t 0 ]]; then
+      read -r -p "Email for the SSH key: " email
+    fi
+    email="${email:-${USER:-user}@$(hostname)}"
+    echo "Generating $key..."
+    if [[ -t 0 ]]; then
+      ssh-keygen -t ed25519 -C "$email" -f "$key"
+    else
+      ssh-keygen -t ed25519 -C "$email" -f "$key" -N ""
+    fi
+  fi
+
+  if [[ ! -f "$key.pub" ]]; then
+    ssh-keygen -y -f "$key" | awk -v email="$email" '{ print $0, email }' > "$key.pub"
+  fi
+
+  if ! gh auth status --hostname github.com >/dev/null 2>&1; then
+    if [[ ! -t 0 ]]; then
+      echo "Authenticate first with: gh auth login --hostname github.com --git-protocol ssh --web" >&2
+      exit 1
+    fi
+    gh auth login --hostname github.com --git-protocol ssh --web
+  fi
+
+  local key_material
+  key_material="$(awk '{print $2}' "$key.pub")"
+  if gh api user/keys --jq '.[].key' | awk '{print $2}' | grep -Fqx "$key_material"; then
+    echo "GitHub already has $key.pub"
+  else
+    gh ssh-key add "$key.pub" --title "$(hostname) dotfiles"
+  fi
+}
+
+should_setup_ssh() {
+  local mode="$1"
+  case "$mode" in
+    yes) return 0 ;;
+    no) return 1 ;;
+  esac
+
+  if [[ ! -t 0 ]]; then
+    echo "Skipping GitHub SSH setup in non-interactive mode (use --ssh to enable)."
+    return 1
+  fi
+
+  local answer
+  read -r -p "Configure a GitHub SSH key? [y/N] " answer
+  [[ "$answer" == [yY] || "$answer" == [yY][eE][sS] ]]
 }
 
 link_dot() {
@@ -124,20 +321,44 @@ link_dot() {
 }
 
 init() {
+  local ssh_mode="ask"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --ssh) ssh_mode="yes" ;;
+      --no-ssh) ssh_mode="no" ;;
+      *)
+        echo "Unknown init option: $1" >&2
+        usage >&2
+        exit 2
+        ;;
+    esac
+    shift
+  done
+
+  install_system_packages
   git -C "$DOTFILES_DIR" submodule update --init --recursive
   stow_home
+  install_oh_my_zsh
+  install_nvm_and_node
+  install_pi
   install_pi_dependencies
+  install_font
+  if should_setup_ssh "$ssh_mode"; then
+    setup_github_ssh
+  fi
   link_dot
-  echo "Dotfiles initialized. Ensure $HOME/.local/bin is on PATH."
+  echo "Dotfiles initialized. Restart Zsh or run: exec zsh"
 }
 
-case "${1:-help}" in
-  init) init ;;
+command="${1:-help}"
+[[ $# -gt 0 ]] && shift
+case "$command" in
+  init) init "$@" ;;
   stow) stow_home ;;
   link) link_dot ;;
   help|-h|--help) usage ;;
   *)
-    echo "Unknown command: $1" >&2
+    echo "Unknown command: $command" >&2
     usage >&2
     exit 2
     ;;
