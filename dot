@@ -11,10 +11,11 @@ usage() {
 Usage: ./dot <command> [options]
 
 Commands:
-  init [--ssh|--no-ssh]  Install tools, link configs, and optionally set up GitHub SSH
-  stow                   Re-link the home configuration
-  link                   Install the dot command into ~/.local/bin
-  help                   Show this help
+  init [--ssh|--no-ssh]  Install the complete development environment
+  install pi              Install Pi and link only its configuration
+  stow                    Re-link the complete home configuration
+  link                    Install the dot command into ~/.local/bin
+  help                    Show this help
 
 By default, dot init asks interactively whether to configure GitHub SSH.
 Use --ssh or --no-ssh to choose explicitly.
@@ -153,6 +154,74 @@ stow_home() {
   stow --dir="$DOTFILES_DIR" --target="$HOME" --restow --no-folding home
 }
 
+link_pi_config() {
+  local source_root="$HOME_PACKAGE/.pi"
+  local target_root="$HOME/.pi"
+  local backup_dir=""
+  local source target relative
+
+  backup_pi_target() {
+    local path="$1"
+    local relative_path="$2"
+    if [[ -z "$backup_dir" ]]; then
+      backup_dir="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)-pi"
+    fi
+    mkdir -p "$backup_dir/$(dirname -- "$relative_path")"
+    mv "$path" "$backup_dir/$relative_path"
+    echo "Backed up $path"
+  }
+
+  mkdir -p "$target_root"
+
+  while IFS= read -r -d '' source; do
+    relative="${source#"$source_root"/}"
+    [[ "$relative" == "$source" ]] && continue
+    target="$target_root/$relative"
+    if [[ -L "$target" ]]; then
+      if [[ "$source" -ef "$target" ]]; then
+        unlink "$target"
+      else
+        backup_pi_target "$target" "$relative"
+      fi
+    fi
+  done < <(find "$source_root" \( -name .git -o -name node_modules \) -prune -o -type d -print0)
+
+  while IFS= read -r -d '' source; do
+    relative="${source#"$source_root"/}"
+    [[ "$relative" == "$source" ]] && continue
+    target="$target_root/$relative"
+    if [[ -e "$target" && ! -d "$target" ]]; then
+      backup_pi_target "$target" "$relative"
+    fi
+    mkdir -p "$target"
+  done < <(find "$source_root" \( -name .git -o -name node_modules \) -prune -o -type d -print0)
+
+  while IFS= read -r -d '' source; do
+    relative="${source#"$source_root"/}"
+    target="$target_root/$relative"
+    mkdir -p "$(dirname -- "$target")"
+
+    if [[ -L "$target" ]]; then
+      if [[ "$source" -ef "$target" ]]; then
+        continue
+      fi
+      backup_pi_target "$target" "$relative"
+    elif [[ -e "$target" ]]; then
+      if [[ -f "$target" ]] && cmp -s "$source" "$target"; then
+        rm -f -- "$target"
+      else
+        backup_pi_target "$target" "$relative"
+      fi
+    fi
+
+    ln -s "$source" "$target"
+  done < <(find "$source_root" \( -name .git -o -name node_modules \) -prune -o -type f -print0)
+
+  if [[ -n "$backup_dir" ]]; then
+    echo "Existing Pi configuration was preserved in $backup_dir"
+  fi
+}
+
 install_oh_my_zsh() {
   if ! command -v zsh >/dev/null 2>&1; then
     echo "Zsh is required. Install it with your system package manager." >&2
@@ -236,10 +305,31 @@ install_nvm_and_node() {
   nvm use default
 }
 
+node_supports_pi_packages() {
+  command -v node >/dev/null 2>&1 || return 1
+  node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 20) ? 0 : 1)'
+}
+
 install_pi() {
   echo "Installing Pi..."
   npm install --global --ignore-scripts "$PI_PACKAGE"
   command -v pi >/dev/null
+}
+
+install_pi_only() {
+  git -C "$DOTFILES_DIR" submodule update --init --recursive
+  link_pi_config
+
+  if ! node_supports_pi_packages || ! command -v npm >/dev/null 2>&1; then
+    install_nvm_and_node
+  else
+    echo "Using existing Node.js $(node --version)."
+  fi
+
+  install_pi
+  install_pi_dependencies
+  link_dot
+  echo "Pi installed with the tracked global configuration. Run pi to authenticate."
 }
 
 install_pi_dependencies() {
@@ -394,6 +484,13 @@ command="${1:-help}"
 [[ $# -gt 0 ]] && shift
 case "$command" in
   init) init "$@" ;;
+  install)
+    if [[ "${1:-}" != "pi" || $# -ne 1 ]]; then
+      echo "Usage: ./dot install pi" >&2
+      exit 2
+    fi
+    install_pi_only
+    ;;
   stow) stow_home ;;
   link) link_dot ;;
   help|-h|--help) usage ;;

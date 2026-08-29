@@ -15,6 +15,8 @@
     "npm:@ogulcancelik/pi-session-recall",
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:pi-mcp-adapter",
-    "npm:@juicesharp/rpiv-todo"
+    "npm:@juicesharp/rpiv-todo",
+    "npm:pi-extmgr",
+    "npm:@plannotator/pi-extension"
   ]
 }
