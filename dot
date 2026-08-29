@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+HOME_PACKAGE="$DOTFILES_DIR/home"
+
+usage() {
+  cat <<'EOF'
+Usage: ./dot <command>
+
+Commands:
+  init   Initialize submodules, link configs, and install Pi dependencies
+  stow   Re-link the home configuration
+  link   Install the dot command into ~/.local/bin
+  help   Show this help
+EOF
+}
+
+ensure_stow() {
+  if command -v stow >/dev/null 2>&1; then
+    return
+  fi
+
+  if command -v brew >/dev/null 2>&1; then
+    echo "Installing GNU Stow..."
+    brew install stow
+    return
+  fi
+
+  echo "GNU Stow is required. Install it with your system package manager." >&2
+  exit 1
+}
+
+prepare_existing_targets() {
+  local backup_dir=""
+  local source target relative
+
+  backup_target() {
+    local path="$1"
+    local relative_path="$2"
+    if [[ -z "$backup_dir" ]]; then
+      backup_dir="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+    fi
+    mkdir -p "$backup_dir/$(dirname -- "$relative_path")"
+    mv "$path" "$backup_dir/$relative_path"
+    echo "Backed up $path"
+  }
+
+  while IFS= read -r -d '' source; do
+    relative="${source#"$HOME_PACKAGE"/}"
+    [[ "$relative" == "$source" ]] && continue
+    target="$HOME/$relative"
+    if [[ -L "$target" ]]; then
+      if [[ "$source" -ef "$target" ]]; then
+        unlink "$target"
+      else
+        backup_target "$target" "$relative"
+      fi
+    fi
+  done < <(find "$HOME_PACKAGE" \( -name .git -o -name node_modules \) -prune -o -type d -print0)
+
+  while IFS= read -r -d '' source; do
+    relative="${source#"$HOME_PACKAGE"/}"
+    [[ "$relative" == .stow-local-ignore ]] && continue
+    target="$HOME/$relative"
+
+    if [[ -L "$target" ]]; then
+      if [[ "$source" -ef "$target" ]]; then
+        unlink "$target"
+      else
+        backup_target "$target" "$relative"
+      fi
+    elif [[ -e "$target" ]]; then
+      if [[ -f "$target" ]] && cmp -s "$source" "$target"; then
+        rm -f -- "$target"
+      else
+        backup_target "$target" "$relative"
+      fi
+    fi
+  done < <(find "$HOME_PACKAGE" \( -name .git -o -name node_modules \) -prune -o -type f -print0)
+
+  if [[ -n "$backup_dir" ]]; then
+    echo "Existing configurations were preserved in $backup_dir"
+  fi
+}
+
+stow_home() {
+  ensure_stow
+  mkdir -p "$HOME/.config" "$HOME/.pi/agent"
+  prepare_existing_targets
+  stow --dir="$DOTFILES_DIR" --target="$HOME" --restow --no-folding home
+}
+
+install_pi_dependencies() {
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "Skipping Pi dependencies: npm is not installed." >&2
+    return
+  fi
+
+  if [[ -f "$HOME/.pi/agent/npm/package.json" ]]; then
+    npm install --prefix "$HOME/.pi/agent/npm" --no-audit --no-fund
+  fi
+
+  local extension
+  for extension in bash-guard browser web-fetch; do
+    if [[ -f "$HOME/.pi/agent/extensions/$extension/package.json" ]]; then
+      npm install --prefix "$HOME/.pi/agent/extensions/$extension" --no-audit --no-fund
+    fi
+  done
+}
+
+link_dot() {
+  local bin_dir="$HOME/.local/bin"
+  local target="$bin_dir/dot"
+  mkdir -p "$bin_dir"
+
+  if [[ -e "$target" && ! -L "$target" ]]; then
+    echo "Refusing to replace existing file: $target" >&2
+    exit 1
+  fi
+
+  ln -sfn "$DOTFILES_DIR/dot" "$target"
+  echo "Linked $target -> $DOTFILES_DIR/dot"
+}
+
+init() {
+  git -C "$DOTFILES_DIR" submodule update --init --recursive
+  stow_home
+  install_pi_dependencies
+  link_dot
+  echo "Dotfiles initialized. Ensure $HOME/.local/bin is on PATH."
+}
+
+case "${1:-help}" in
+  init) init ;;
+  stow) stow_home ;;
+  link) link_dot ;;
+  help|-h|--help) usage ;;
+  *)
+    echo "Unknown command: $1" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

@@ -14,16 +14,20 @@ Credentials, sessions, logs, sockets, caches, dependencies, and generated state 
 ## Install
 
 ```sh
-git clone --recurse-submodules git@github.com:patlov/.dotfiles.git ~/.dotfiles
+git clone git@github.com:patlov/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-stow --target="$HOME" home
+./dot init
 ```
 
-Install GNU Stow first when needed (`brew install stow` on macOS). If files already exist at their target paths, back them up before running Stow.
+`dot init` initializes Git submodules, installs GNU Stow through Homebrew when needed, links the `home/` tree, restores Pi dependencies, and installs `dot` into `~/.local/bin`.
 
-Pi package dependencies can be restored with:
+Existing files at managed target paths are never overwritten. Matching files are replaced with links, while conflicting files are preserved under `~/.dotfiles-backup/<timestamp>/` before linking.
+
+## Commands
 
 ```sh
-cd ~/.pi/agent/npm
-npm install
+dot init   # Complete setup
+dot stow   # Re-link configuration
+dot link   # Re-link the dot command
+dot help   # Show command help
 ```
