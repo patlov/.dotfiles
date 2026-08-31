@@ -2,9 +2,9 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@henryqw/pi-herdr": "^0.4.1",
-    "@juicesharp/rpiv-ask-user-question": "^2.7.1",
-    "@juicesharp/rpiv-todo": "^2.7.1",
+    "@henryqw/pi-herdr": "^0.4.3",
+    "@juicesharp/rpiv-ask-user-question": "^2.8.0",
+    "@juicesharp/rpiv-todo": "^2.8.0",
     "@mobrienv/pi-tidy-tools": "^0.4.2",
     "@ogulcancelik/pi-ghostty-theme-sync": "^0.1.2",
     "@ogulcancelik/pi-session-recall": "^1.0.7",
