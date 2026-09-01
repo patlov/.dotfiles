@@ -8,7 +8,7 @@
     "@mobrienv/pi-tidy-tools": "^0.4.2",
     "@ogulcancelik/pi-ghostty-theme-sync": "^0.1.2",
     "@ogulcancelik/pi-session-recall": "^1.0.7",
-    "@plannotator/pi-extension": "^0.27.9",
+    "@plannotator/pi-extension": "^0.27.10",
     "pi-eta": "^0.1.1",
     "pi-extmgr": "^0.3.0",
     "pi-mcp-adapter": "^2.31.0"
