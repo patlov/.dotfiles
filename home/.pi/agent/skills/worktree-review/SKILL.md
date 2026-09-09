@@ -55,7 +55,7 @@ Use the `subagent` tool with:
 - no managed `worktree` argument, because the helper already created the worktree;
 - a stable name ending in `-review`, derived from a short branch slug;
 - `thinking: "high"`;
-- an exact authenticated Codex review model; never use an Anthropic/Claude model. Prefer `openai-codex/gpt-5.6-terra`, then `openai-codex/gpt-5.6-sol`. Do not use Luna for reviews. If neither is available, inspect the live catalogue and choose the newest authenticated Codex model rather than falling back to Claude.
+- an exact authenticated Codex review model; never use an Anthropic/Claude model. Prefer `openai-codex/gpt-5.6-sol`, then `openai-codex/gpt-5.6-terra`. Do not use Luna for reviews. If neither is available, inspect the live catalogue and choose the newest authenticated Codex model rather than falling back to Claude.
 
 Prompt the child to:
 
