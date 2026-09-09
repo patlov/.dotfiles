@@ -1,3 +1,0 @@
-[submodule "home/.pi/agent/extensions/pi-interactive-subagents"]
-	path = home/.pi/agent/extensions/pi-interactive-subagents
-	url = https://github.com/amosblomqvist/pi-interactive-subagents.git
