@@ -19,7 +19,7 @@ cd ~/.dotfiles
 ./dot init
 ```
 
-On macOS, `dot init` installs Homebrew when needed and uses it to install GNU Stow, GitHub CLI, Ghostty, Zed, and JetBrainsMono Nerd Font. On Arch Linux it installs the equivalent packages with `pacman`.
+On macOS, `dot init` installs Homebrew when needed and uses it to install GNU Stow, GitHub CLI, Ghostty, Zed, JetBrainsMono Nerd Font, SoX, and whisper.cpp. On Arch Linux it installs the equivalent packages with `pacman`.
 
 The command also:
 
@@ -44,9 +44,11 @@ cd ~/.dotfiles
 ./dot install pi
 ```
 
-This command links only `home/.pi` into `~/.pi`, reuses Node.js 22.20 or newer when available, installs NVM plus the latest Node.js LTS only when needed, installs Pi and its dependencies, and links `dot` into `~/.local/bin`. It does not install Homebrew, system packages, Ghostty, Zed, fonts, Oh My Zsh, or change the login shell. Conflicting Pi files are backed up under `~/.dotfiles-backup/<timestamp>-pi/`.
+This command links only `home/.pi` into `~/.pi`, reuses Node.js 22.20 or newer when available, installs NVM plus the latest Node.js LTS only when needed, installs Pi and its dependencies, and links `dot` into `~/.local/bin`. It does not install Homebrew, Ghostty, Zed, fonts, Oh My Zsh, or change the login shell. It does install the local-dictation system packages through an existing Homebrew or Arch `pacman` installation. Conflicting Pi files are backed up under `~/.dotfiles-backup/<timestamp>-pi/`.
 
-The Pi configuration includes `pi-extmgr`, Plannotator, `/save-md`, Git editor/hook protections, staged secret scanning, and secret cloaking for tool output.
+The Pi configuration includes `pi-extmgr`, Plannotator, `/save-md`, Git editor/hook protections, staged secret scanning, secret cloaking for tool output, and private local voice dictation.
+
+Local dictation uses SoX plus `whisper.cpp` with the quantized Whisper Large-v3-Turbo model. Press `ctrl+space` to start or stop recording and `ctrl+shift+space` to cancel. The model server starts on the first dictation, stays warm for 30 minutes after activity, and stops when Pi exits. Audio remains on the machine. The installer downloads the checksum-verified 547 MB model into untracked user data under `~/.local/share/pi-local-dictate/`.
 
 Two reusable skills also provide browsable local reports:
 

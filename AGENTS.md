@@ -52,6 +52,7 @@ Run the checks relevant to the change:
 bash -n dot
 git diff --check
 node --experimental-strip-types --test home/.pi/agent/extensions/safety/test/*.test.ts
+node --experimental-strip-types --test home/.pi/agent/extensions/local-dictate/test/*.test.ts
 npm audit --prefix home/.pi/agent/npm --omit=dev
 pi --list-models >/dev/null
 ```

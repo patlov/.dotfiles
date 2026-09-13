@@ -1,4 +1,5 @@
 .DS_Store
+nvim.log
 
 # Pi credentials and runtime/generated state
 home/.pi/agent/auth.json
