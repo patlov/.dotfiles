@@ -55,6 +55,7 @@ Use the `subagent` tool with:
 - no managed `worktree` argument, because the helper already created the worktree;
 - a stable name ending in `-review`, derived from a short branch slug;
 - `thinking: "high"`;
+- bash-guard disabled from process startup via Pi's `--bash-guard-disabled` flag, so the autonomous reviewer cannot stall on interactive confirmations; the Herdr launcher must supply this flag for fresh and resumed children—do not rely on asking the child to run `/bash-guard` after launch;
 - an exact authenticated Codex review model; never use an Anthropic/Claude model. Prefer `openai-codex/gpt-5.6-sol`, then `openai-codex/gpt-5.6-terra`. Do not use Luna for reviews. If neither is available, inspect the live catalogue and choose the newest authenticated Codex model rather than falling back to Claude.
 
 Prompt the child to:
@@ -66,6 +67,16 @@ Prompt the child to:
 5. run the narrowest relevant validation;
 6. generate the architecture-review HTML report outside the repository, as that skill requires; and
 7. return the verdict, blocker/major counts, validation performed, and absolute HTML report path.
+
+For every blocker and major finding, require the child to also return:
+
+- a plain-language explanation of the failure scenario and user/system impact;
+- precise file and line ranges for both the changed code and any downstream code needed to trace the issue;
+- whether the risky line is changed by the branch or is pre-existing code brought into scope by the change;
+- the best inline PR-comment anchor, preferring a changed line in the reviewed branch; and
+- concise, paste-ready PR comment text that explains the problem and requests the smallest safe correction.
+
+The anchor must be where the branch introduces or triggers the behaviour, even when the final failing call is indirect. Trace through manager/helper/task calls before choosing it. If no honest inline anchor exists, explicitly recommend a file-level comment instead of attaching the finding to an unrelated line.
 
 State that the child is a leaf: it must not spawn agents, edit, commit, push, merge, deploy, or clean up the worktree.
 
@@ -101,11 +112,23 @@ This clears the active marker but deliberately retains the worktree. Tell the us
 
 ## 4. Final response
 
-Lead with the review verdict, then include:
+Lead with the review verdict and state the blocker, major, and minor counts accurately. Do not call major findings blockers.
 
-- blocker and major-finding counts;
+Present every blocker and major finding separately using this structure:
+
+1. **Finding title and severity**
+2. **Simple explanation** — describe the concrete failure sequence without assuming familiarity with the implementation
+3. **Why it matters** — state the observable user, data, security, performance, or operational impact
+4. **Locations** — list precise file and line ranges, distinguishing changed lines from downstream or pre-existing context
+5. **Where to comment** — identify the best changed-line anchor, or say that it should be a file-level comment
+6. **Suggested PR comment** — provide concise text ready to paste into the review
+
+When a finding crosses files, show the call/data flow that connects them. Do not claim a function is called directly when the trace is indirect. Summarise minor findings more briefly unless the user requests the same detail.
+
+Then include:
+
 - checks/tests run and any validation gaps;
-- the HTML report's absolute path and `file://` URL;
+- the HTML report's absolute path and `file://` URL; and
 - whether the worktree was removed or retained, with its path when retained.
 
 Do not offer to apply fixes. This skill's deliverable is the review and safe lifecycle handling.
