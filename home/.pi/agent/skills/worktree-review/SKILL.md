@@ -1,12 +1,21 @@
 ---
 name: worktree-review
-description: Fetches a remote Git branch into a fresh isolated review worktree, runs Pi's architecture-review workflow there, then safely removes the clean worktree. Use when the user says "worktree review <branch>", asks to review a branch without touching the current checkout, or invokes /skill:worktree-review.
+description: Fetches a remote Git branch into a fresh isolated review worktree, runs Pi's architecture-review workflow there, then safely removes the clean worktree. Supports a fast GLM reviewer mode. Use when the user says "worktree review <branch>", asks to review a branch without touching the current checkout, or invokes /skill:worktree-review.
 compatibility: Requires Git, a configured origin remote, and Pi subagents.
 ---
 
 # Worktree Review
 
-Review a remote branch in an isolated worktree without changing the user's current checkout. The argument is the remote branch name. If it is missing, ask for it; never guess.
+Review a remote branch in an isolated worktree without changing the user's current checkout. One argument must be the remote branch name. If it is missing, ask for it; never guess.
+
+An optional `fast` flag selects the fast reviewer. Accept `fast` or `--fast`, either before or after the branch name. Examples:
+
+```text
+/skill:worktree-review fast fix/my-branch
+/skill:worktree-review fix/my-branch --fast
+```
+
+Reject any other extra arguments instead of treating them as part of the branch name.
 
 This workflow is review-only. Do not edit, commit, push, merge, or rebase the reviewed branch.
 
@@ -28,6 +37,8 @@ HELPER="<skill-directory>/scripts/worktree-review.sh"
 
 ## 1. Prepare the worktree
 
+Parse and validate the arguments before creating anything. In fast mode, also confirm that `openrouter/z-ai/glm-5.3-flash` is available and authenticated; if not, report that fast mode is unavailable and stop before preparing a worktree.
+
 Run from the repository where the user invoked the skill:
 
 ```bash
@@ -48,15 +59,21 @@ Detached checkout is intentional: a review must not claim, move, or collide with
 
 ## 2. Launch the Pi reviewer
 
+Select the reviewer mode from the parsed arguments:
+
+- **Default:** use `thinking: "high"` and an exact authenticated Codex review model. Prefer `openai-codex/gpt-5.6-sol`, then `openai-codex/gpt-5.6-terra`. Do not use Luna for reviews. If neither is available, inspect the live catalogue and choose the newest authenticated Codex model rather than falling back to Claude.
+- **Fast (`fast` or `--fast`):** use exactly `openrouter/z-ai/glm-5.3-flash` with `thinking: "high"`. If that exact model is not authenticated, report that fast mode is unavailable and stop; do not silently fall back to another model.
+
+Never use an Anthropic/Claude model in either mode.
+
 Use the `subagent` tool with:
 
 - `agent: "reviewer"`;
 - `cwd: WORKTREE_PATH`;
 - no managed `worktree` argument, because the helper already created the worktree;
 - a stable name ending in `-review`, derived from a short branch slug;
-- `thinking: "high"`;
-- bash-guard disabled from process startup via Pi's `--bash-guard-disabled` flag, so the autonomous reviewer cannot stall on interactive confirmations; the Herdr launcher must supply this flag for fresh and resumed children—do not rely on asking the child to run `/bash-guard` after launch;
-- an exact authenticated Codex review model; never use an Anthropic/Claude model. Prefer `openai-codex/gpt-5.6-sol`, then `openai-codex/gpt-5.6-terra`. Do not use Luna for reviews. If neither is available, inspect the live catalogue and choose the newest authenticated Codex model rather than falling back to Claude.
+- the exact `model` and `thinking` selected above;
+- bash-guard disabled from process startup via Pi's `--bash-guard-disabled` flag, so the autonomous reviewer cannot stall on interactive confirmations; the Herdr launcher must supply this flag for fresh and resumed children—do not rely on asking the child to run `/bash-guard` after launch.
 
 Prompt the child to:
 

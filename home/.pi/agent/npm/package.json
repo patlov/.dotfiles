@@ -3,15 +3,15 @@
   "private": true,
   "dependencies": {
     "@henryqw/pi-herdr": "^0.4.7",
-    "@juicesharp/rpiv-ask-user-question": "^2.10.1",
-    "@juicesharp/rpiv-todo": "^2.10.1",
+    "@juicesharp/rpiv-ask-user-question": "^2.11.0",
+    "@juicesharp/rpiv-todo": "^2.11.0",
     "@mobrienv/pi-tidy-tools": "^0.4.2",
     "@ogulcancelik/pi-ghostty-theme-sync": "^0.1.2",
     "@ogulcancelik/pi-session-recall": "^1.0.7",
-    "@plannotator/pi-extension": "^0.27.16",
+    "@plannotator/pi-extension": "^0.27.17",
     "pi-eta": "^0.1.1",
     "pi-extmgr": "^0.3.0",
-    "pi-herdr-agents": "^2.0.2",
-    "pi-mcp-adapter": "^2.35.0"
+    "pi-herdr-agents": "^2.0.3",
+    "pi-mcp-adapter": "^2.36.0"
   }
 }
