@@ -37,7 +37,7 @@ HELPER="<skill-directory>/scripts/worktree-review.sh"
 
 ## 1. Prepare the worktree
 
-Parse and validate the arguments before creating anything. In fast mode, also confirm that `openrouter/z-ai/glm-5.3-flash` is available and authenticated; if not, report that fast mode is unavailable and stop before preparing a worktree.
+Parse and validate the arguments before creating anything. Confirm that the selected review model is available and authenticated; if not, report that the selected mode is unavailable and stop before preparing a worktree.
 
 Run from the repository where the user invoked the skill:
 
@@ -61,7 +61,7 @@ Detached checkout is intentional: a review must not claim, move, or collide with
 
 Select the reviewer mode from the parsed arguments:
 
-- **Default:** use `thinking: "high"` and an exact authenticated Codex review model. Prefer `openai-codex/gpt-5.6-sol`, then `openai-codex/gpt-5.6-terra`. Do not use Luna for reviews. If neither is available, inspect the live catalogue and choose the newest authenticated Codex model rather than falling back to Claude.
+- **Default:** use exactly `openai-codex/gpt-6-sol` with `thinking: "xhigh"` (extra high). Confirm that this exact model is authenticated before preparing the worktree; if unavailable, report that default review mode is unavailable and stop rather than silently changing models.
 - **Fast (`fast` or `--fast`):** use exactly `openrouter/z-ai/glm-5.3-flash` with `thinking: "high"`. If that exact model is not authenticated, report that fast mode is unavailable and stop; do not silently fall back to another model.
 
 Never use an Anthropic/Claude model in either mode.
