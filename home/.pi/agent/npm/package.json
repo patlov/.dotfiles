@@ -5,13 +5,13 @@
     "@henryqw/pi-herdr": "^0.4.7",
     "@juicesharp/rpiv-ask-user-question": "^2.11.0",
     "@juicesharp/rpiv-todo": "^2.11.0",
-    "@mobrienv/pi-tidy-tools": "^0.4.2",
+    "@mobrienv/pi-tidy-tools": "^0.5.3",
     "@ogulcancelik/pi-ghostty-theme-sync": "^0.1.2",
     "@ogulcancelik/pi-session-recall": "^1.0.7",
-    "@plannotator/pi-extension": "^0.27.18",
+    "@plannotator/pi-extension": "^0.27.22",
     "pi-eta": "^0.1.1",
     "pi-extmgr": "^0.3.0",
-    "pi-herdr-agents": "^2.0.4",
-    "pi-mcp-adapter": "^2.37.0"
+    "pi-herdr-agents": "^2.0.5",
+    "pi-mcp-adapter": "^3.3.0"
   }
 }

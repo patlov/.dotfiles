@@ -41,3 +41,6 @@ alias gsd='git stash drop'
 alias gsp='git stash pop'
 alias gm='git merge'
 alias upd='brew update && brew upgrade'
+
+if [ -f "$HOME/Downloads/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/Downloads/google-cloud-sdk/path.zsh.inc"; fi
+if [ -f "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc"; fi
