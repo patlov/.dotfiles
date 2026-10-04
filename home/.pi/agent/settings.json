@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.87.1",
+  "lastChangelogVersion": "1.0.2",
   "theme": "ghostty-sync-762fe13d",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6-sol",
@@ -15,5 +15,8 @@
     "npm:pi-extmgr",
     "npm:@plannotator/pi-extension",
     "npm:pi-herdr-agents"
+  ],
+  "extensions": [
+    "-builtin:mcp"
   ]
 }
