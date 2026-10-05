@@ -41,6 +41,13 @@ alias gsd='git stash drop'
 alias gsp='git stash pop'
 alias gm='git merge'
 alias upd='brew update && brew upgrade'
+alias gfa='f() { git fetch origin "$1" && git switch -c "$1" FETCH_HEAD; }; f'
+alias gfb='f() { git fetch origin "$1" || return; if git show-ref --verify --quiet "refs/heads/$1"; then git switch "$1"; else git switch -c "$1" FETCH_HEAD; fi; git config "branch.$1.remote" origin; git config "branch.$1.merge" "refs/heads/$1"; }; f'
+alias bdev="cd ~/Documents/askLio/backend/"
+alias fdev="cd ~/Documents/askLio/frontend/"
+alias rbe="uv run python main.py"
+alias rfe="npm run dev"
+alias whatsmyip="ifconfig -l | xargs -n1 ipconfig getifaddr"
 
 if [ -f "$HOME/Downloads/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/Downloads/google-cloud-sdk/path.zsh.inc"; fi
 if [ -f "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc"; fi
