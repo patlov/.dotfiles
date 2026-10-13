@@ -1,171 +1,132 @@
 ---
 name: worktree-review
-description: Reviews a remote Git branch in a fresh isolated worktree, produces a visual HTML code map explaining changes and review findings, then safely removes the clean worktree. Supports a fast GLM reviewer mode. Use when the user says "worktree review <branch>", asks to review a branch without touching the current checkout, or invokes /skill:worktree-review.
-compatibility: Requires Git, a configured origin remote, and Pi subagents.
+description: Review a remote branch in an isolated worktree and produce a visual HTML code map with evidence-backed findings. Use for worktree reviews or /skill:worktree-review; supports an optional fast mode.
+compatibility: Requires Git, an origin remote, Pi subagents and Node.js 20 or newer. Codemode is preferred when available.
 ---
 
 # Worktree Review
 
-Review a remote branch in an isolated worktree without changing the user's current checkout. One argument must be the remote branch name. If it is missing, ask for it; never guess.
+Review-only: leave the current checkout and reviewed branch unchanged. Deliver one readable code-map HTML page, then safely clean up the review worktree.
 
-An optional `fast` flag selects the fast reviewer. Accept `fast` or `--fast`, either before or after the branch name. Examples:
+## 1. Select the branch and reviewer
 
-```text
-/skill:worktree-review fast fix/my-branch
-/skill:worktree-review fix/my-branch --fast
-```
+Accept one remote branch name and an optional `fast` or `--fast` flag, in either order. Reject extra arguments. If the user supplies a PR URL, resolve its exact head branch and repository; do not guess a branch or silently review a different repository. Ask for a branch if neither is supplied.
 
-Reject any other extra arguments instead of treating them as part of the branch name.
+| Mode | Exact model | Thinking |
+| --- | --- | --- |
+| Default | `openai-codex/gpt-6.1-sol` | `xhigh` |
+| Fast | `openrouter/z-ai/glm-5.3-flash` | `high` |
 
-This workflow is review-only. Do not edit, commit, push, merge, or rebase the reviewed branch.
+Confirm the selected model is available and authenticated **before** creating a worktree. If unavailable, stop and report which mode is unavailable. No model fallback or Anthropic/Claude reviewer.
 
-The HTML deliverable is one **visual code-map walkthrough**, not a separate architecture-review report. Keep the evidence-based review, but explain the changed system first and place findings in the relevant flows.
+## 2. Prepare an isolated snapshot
 
-## Lifecycle policy
-
-- Create a unique detached worktree for every run under `~/.pi/agent/worktrees/reviews/<repo-key>/` (or the equivalent `PI_CODING_AGENT_DIR` location), outside the repository.
-- Before creating it, prune clean worktrees left by earlier runs of this skill for the same repository.
-- Never prune a worktree with an active marker less than one day old.
-- Never remove a dirty worktree.
-- After a completed review, remove the worktree only when it is clean.
-- After a failed or interrupted review, retain the worktree; a later invocation may prune it if it remains clean.
-- Never use `--force` for cleanup.
-
-The helper script enforces these rules. Resolve paths relative to this `SKILL.md`:
+Resolve the helper relative to this skill and run it from the invoking repository:
 
 ```bash
 HELPER="<skill-directory>/scripts/worktree-review.sh"
-```
-
-## 1. Prepare the worktree
-
-Parse and validate the arguments before creating anything. Confirm that the selected review model is available and authenticated; if not, report that the selected mode is unavailable and stop before preparing a worktree.
-
-Run from the repository where the user invoked the skill:
-
-```bash
 "$HELPER" prepare "<remote-branch>"
 ```
 
-The command:
+Capture `WORKTREE_PATH`, `TARGET_COMMIT` and `BASE_REF`. The helper fetches the exact branch and `origin/main`, then creates a unique detached worktree outside the repository. On fetch failure, report the exact Git error and stop; do not substitute a local or similarly named branch.
 
-1. validates the branch name;
-2. prunes eligible leftovers from this skill only;
-3. fetches the exact branch and `origin/main`;
-4. creates a unique detached worktree outside the repository at the fetched commit; and
-5. prints `WORKTREE_PATH=...`, `TARGET_COMMIT=...`, and `BASE_REF=origin/main`.
+The helper owns lifecycle safety: it prunes only eligible clean review leftovers, protects active markers younger than one day, and never removes dirty worktrees. Failed/interrupted reviews remain available for later safe pruning. Never use `--force` for cleanup.
 
-Capture `WORKTREE_PATH`. If fetching fails, report the exact Git error and stop. Do not fall back to a similarly named branch or a local branch.
+## 3. Launch one leaf reviewer
 
-Detached checkout is intentional: a review must not claim, move, or collide with the user's local branch.
-
-## 2. Launch the Pi reviewer
-
-Select the reviewer mode from the parsed arguments:
-
-- **Default:** use exactly `openai-codex/gpt-6.1-sol` with `thinking: "xhigh"` (extra high). Confirm that this exact model is authenticated before preparing the worktree; if unavailable, report that default review mode is unavailable and stop rather than silently changing models.
-- **Fast (`fast` or `--fast`):** use exactly `openrouter/z-ai/glm-5.3-flash` with `thinking: "high"`. If that exact model is not authenticated, report that fast mode is unavailable and stop; do not silently fall back to another model.
-
-Never use an Anthropic/Claude model in either mode.
-
-Use the `subagent` tool with:
-
-- `agent: "reviewer"`;
-- `cwd: WORKTREE_PATH`;
-- no managed `worktree` argument, because the helper already created the worktree;
-- a stable name ending in `-review`, derived from a short branch slug;
-- the exact `model` and `thinking` selected above;
-- `bashGuardDisabled: true` explicitly for this autonomous review, so the Herdr launcher supplies Pi's `--bash-guard-disabled` flag from process startup and the reviewer cannot stall on interactive confirmations; fresh and resumed launches otherwise keep bash-guard enabled by default. Pass the same explicit opt-out when resuming this review—do not ask the child to run `/bash-guard` after launch. If the loaded tool does not expose `bashGuardDisabled`, stop and ask the user to reload the updated extension before launching.
-
-Prompt the child to:
-
-1. review the exact range `origin/main...HEAD` for the named branch;
-2. read all repository instructions that govern changed files;
-3. read `~/.pi/agent/skills/architecture-review/SKILL.md` completely and apply its scope, baseline, review, validation and severity methodology (sections 1–5); replace its section 6 report format with the code-map contract below, rather than generating two HTML pages;
-4. remain read-only and make no implementation changes;
-5. run the narrowest relevant validation without modifying the reviewed checkout; use a pinned temporary archive outside it when checks generate files;
-6. read and follow `~/.pi/agent/skills/generate-html/SKILL.md`, then generate the code-map HTML outside the repository using the contract below; and
-7. return the verdict, accurate blocker/major/minor counts, validation performed and gaps, absolute HTML path, and pinned repository/head/base/merge-base identity.
-
-### Code-map HTML contract
-
-Create a self-contained, browsable explanation for someone trying to understand the branch, not just a list of defects. Produce **one HTML page** with:
-
-1. **Executive summary and before/after:** what the branch enables, what remains unchanged, rollout gates and scope; include the review verdict/counts without making findings the page's main structure.
-2. **Clickable visual architecture map:** entry points, changed layers, key components/services and dependency direction. Label blocks **NEW**, **CHANGED** or **REUSED** based on the diff. Link blocks to the corresponding explanation sections. Use inline SVG or HTML/CSS cards and arrows, not only a fenced ASCII diagram.
-3. **Concrete code/control/data flows:** trace the feature's relevant loading, filtering, rendering, state, persistence and action paths. Cite functions, file paths and snapshot line ranges. Follow indirect helpers/managers/tasks accurately; omit categories that do not apply rather than inventing them.
-4. **Contracts and ownership:** explain payload/response changes, local versus persisted state, identity keys, permission checks, domain side effects, partial failures, compatibility and important limits. Keep presentation metadata distinct from server authorisation.
-5. **Shared changes:** show which reusable models, hooks, inputs, queries or primitives change and what other callers are affected. Do not imply every changed file is feature-local.
-6. **Review risks on the map:** place each blocker/major at the flow or ownership boundary that causes it. Include the full explanation, impact, evidence, changed/context distinction, PR anchor, paste-ready comment and smallest safe correction required below. Label reproduced, trace-backed and unverified evidence honestly. Summarise minor findings separately; say when none were retained. Recommendations are not implemented fixes.
-7. **Reading order and invariants:** a short guided route through the decisive files and the behaviours future changes must preserve.
-8. **Complete grouped change inventory:** all files in the exact reviewed diff, labelled added/modified/deleted (and renamed where applicable), grouped by responsibility in expandable sections. Do not fabricate contents for deleted files or infer ownership solely from paths.
-9. **Sources and validation:** repository/head/base/merge-base pins, dirty-state inclusion/exclusion, checks performed and gaps. Cite this run's evidence, never claim previous test results were rerun.
-
-Use the `generate-html` renderer for the explanatory Markdown, then add the visual map and expandable inventory to the generated HTML if needed. Its renderer escapes raw Markdown HTML. Verify inline code paths retain literal underscores rather than becoming emphasis markup. Keep all assets inline: no CDN, fonts, analytics or network dependencies. Do not embed credentials or dump private source code; use small synthetic payload examples when helpful.
-
-Before reporting completion, verify the HTML exists, contains the title and complete inventory, has no placeholder tokens, and every internal map/navigation link resolves. Check inventory counts against Git. Open it with `open` on macOS or `xdg-open` on Linux when a desktop session is available. Report any visual verification gap; opening alone is not proof of visual correctness. The page and any supporting evidence must survive worktree removal.
-
-For every blocker and major finding, require the child to also return:
-
-- a plain-language explanation of the failure scenario and user/system impact;
-- precise file and line ranges for both the changed code and any downstream code needed to trace the issue;
-- whether the risky line is changed by the branch or is pre-existing code brought into scope by the change;
-- the best inline PR-comment anchor, preferring a changed line in the reviewed branch; and
-- concise, paste-ready PR comment text that explains the problem and requests the smallest safe correction.
-
-The anchor must be where the branch introduces or triggers the behaviour, even when the final failing call is indirect. Trace through manager/helper/task calls before choosing it. If no honest inline anchor exists, explicitly recommend a file-level comment instead of attaching the finding to an unrelated line.
-
-State that the child is a leaf: it must not spawn agents, edit repository files, commit, push, merge, deploy, or clean up the worktree. Writing the HTML and supporting artefacts outside the repository is permitted.
-
-Before launching, print the required orchestration line:
+Print this orchestration line before launch:
 
 ```text
 <branch-slug>-review | reviewer | review | <exact-model> | <WORKTREE_PATH>
 ```
 
-Then launch the child and end the turn. Do not poll. Pi will deliver the result automatically.
+Call `subagent` with:
 
-## 3. Clean up after delivery
+- `agent: "reviewer"`, a short branch-derived name ending in `-review`, and `cwd: WORKTREE_PATH`;
+- the exact selected `model` and `thinking`, with `fork: false` for a fresh session;
+- **no** managed `worktree` argument: the helper already created it;
+- `tools: "read,bash,grep,find,ls,codemode"` when Codemode is available. This explicit override matters: the packaged reviewer defaults omit Codemode. Otherwise use `"read,bash,grep,find,ls"` and disclose the fallback.
 
-When the child result arrives, first inspect the HTML and preserve its full findings and evidence outside the worktree. Confirm the code-map contract and pinned scope are satisfied before declaring completion or cleaning up; a missing/incomplete deliverable is a failed review, not successful cleanup. Then run:
+Keep bash-guard enabled. Herdr sets `PI_SUBAGENT_ID` for fresh and resumed children, which selects noninteractive guard mode: routine review commands run without approval prompts, while the guard's destructive-command blocklist remains active. Do not pass a guard-disabling option or ask the child to run `/bash-guard`. If a required command is blocked, report the validation gap rather than bypassing the guard. The guard is a shell-pattern check, not a read-only sandbox; the reviewer restrictions below still apply.
+
+Give the child the branch, expected target commit, worktree path and this skill path. Require it to read this skill and follow the **Reviewer assignment** and **HTML layout** below. After launching, end the turn; results arrive automatically. Do not poll status or session logs.
+
+### Reviewer assignment
+
+- You are a leaf. Do not spawn agents, edit repository files, commit, push, merge, rebase, deploy or clean up the worktree. HTML and evidence may be written outside the repository.
+- Pin repository identity, HEAD, the `origin/main` tip and merge-base. Confirm HEAD matches the parent's expected target; a mismatch makes the review incomplete. Inspect the complete inventory and diff for exactly `origin/main...HEAD`; use pinned SHAs thereafter. Exclude and inventory staged, unstaged and untracked changes.
+- Read the repository instructions governing changed files. Read `~/.pi/agent/skills/architecture-review/SKILL.md` completely and apply sections 1–5. Replace its report format with the layout below; do not produce a second report.
+- Trace affected callers, helpers, managers and tasks before judging behaviour. Distinguish changed code from pre-existing context and reproduced findings from trace-backed or unverified concerns.
+- Run the narrowest relevant validation without modifying the checkout. Use a pinned temporary archive outside it for commands that generate files. Report checks from this run and any gaps, not previous results as reruns.
+- Read `~/.pi/agent/skills/generate-html/SKILL.md` and use its renderer for explanatory Markdown. **Skip its desktop-opening step. The child must not run `open`, `xdg-open` or another desktop launcher.** This workflow's parent alone opens the final page after verification. Headless visual checks are allowed.
+- Write one self-contained HTML page and supporting evidence outside the worktree so they survive cleanup. Return the verdict, accurate blocker/major/minor counts, findings, validation/gaps, absolute artefact paths and pinned identity.
+
+### Use Codemode where it helps
+
+If `codemode` is exposed, prefer it for batches of independent reads/searches, filtering large outputs and chaining dependent checks. Use direct tools for a single simple call or reading image attachments. If Codemode is unavailable in the child, continue with ordinary tools and report that limitation; do not silently claim it was used.
+
+Read Pi's `docs/codemode.md` for the installed version before first use. Scripts are raw JavaScript in a sandbox: no Node, file system, network or timers; call available tools through `tools.<name>(args)`. Start scripts with `// @reasoning: <goal>` (after any `// @options:` line). Tools called inside scripts do not take a `reasoning` argument.
+
+Use `Promise.allSettled()` for independent calls and inspect failures. Await every call; do not run dependent checks in parallel. Show only relevant results, while preserving full diff, inventory and validation evidence outside the worktree. Read required guidance completely. Codemode changes tool orchestration, not review scope, permissions or evidence standards.
+
+## HTML layout: explain first, evidence second
+
+Write for a developer encountering the feature for the first time. Use plain language, short headings, short paragraphs and one idea per bullet. Avoid dense compound sentences and repeated summaries. Introduce a technical term before using it.
+
+Keep feature explanation, review findings and validation distinct. Function names, long file paths, line ranges and audit metadata belong in linked or expandable evidence details, not every introductory sentence. Preserve all evidence without making it the main reading path.
+
+Use this reading order:
+
+1. **What changes:** up to three plain-language bullets describing user-visible behaviour. Add a compact Before → After comparison, what stays unchanged and any rollout gate. Show verdict and severity counts separately.
+2. **Visual map:** clickable inline SVG or HTML/CSS nodes and directional arrows for entry points, changed layers and dependencies. Label nodes **NEW**, **CHANGED** or **REUSED** from the diff. Link nodes to the corresponding numbered flow; mark risk boundaries with links to findings. No ASCII-only map.
+3. **How it works:** numbered steps following the relevant control/data path. Explain each step briefly, then provide its function/path/snapshot-line evidence. Cover loading, filtering, rendering, state, persistence and actions only where applicable. Do not present indirect calls as direct calls.
+4. **Contracts and shared changes:** separate subsections for payloads, local/persisted state, identity, permissions, side effects, partial failures, compatibility and limits where relevant. Identify shared primitives and affected callers; presentation metadata is not server authorisation.
+5. **Review findings:** one clearly separated card/section per blocker or major, linked back to its causal map boundary. Summarise minors separately, or say none were retained. Recommendations are not implemented fixes.
+6. **Reading guide:** a short route through decisive files and the invariants future changes must preserve.
+7. **Files and validation:** expandable grouped inventory of every file in the pinned diff, with added/modified/deleted/renamed status. Include repository/head/base/merge-base pins, dirty-state exclusions, checks and gaps. Do not infer deleted contents or ownership from paths alone.
+
+Give each finding a short title and explicit severity. For each blocker or major, include:
+
+- **Problem:** concrete failure sequence and preconditions in plain language.
+- **Impact:** observable user, data, security, performance or operational consequence.
+- **Evidence:** reproduced, trace-backed or unverified; precise changed-code and downstream file/line ranges, plus the connecting flow.
+- **Comment location:** best changed-line PR anchor where the branch introduces/triggers the issue. Distinguish changed and pre-existing lines. If no honest inline anchor exists, recommend a file-level comment.
+- **Suggested PR comment:** concise, paste-ready text requesting the smallest safe correction.
+
+### Render and verify without opening
+
+Use the `generate-html` renderer, then add the visual map, expandable evidence and inventory to its output as needed; raw Markdown HTML is escaped. Keep all assets inline, with no CDN, fonts, analytics or network dependencies. Do not embed credentials or private source dumps; use small synthetic payloads if helpful.
+
+Before returning, verify:
+
+- the HTML exists, contains its title and has no placeholder tokens;
+- every map/navigation target resolves and inline code paths retain literal underscores;
+- inventory paths, statuses and counts match the pinned Git diff;
+- pins, complete findings and supporting evidence are outside the worktree;
+- any visual checks and their limits are reported honestly. Desktop opening is not proof of visual correctness.
+
+## 4. Verify, clean up, then open once
+
+When the child returns, inspect the HTML and preserved evidence. Confirm the pinned scope, findings and layout are complete before declaring success or removing the worktree. Do not open drafts or intermediate versions.
+
+For a complete review, run from the invoking repository:
 
 ```bash
 "$HELPER" cleanup-success "<WORKTREE_PATH>"
 ```
 
-Interpret the result:
+- `REMOVED=...` or `ALREADY_REMOVED=...`: cleanup succeeded.
+- `RETAINED_DIRTY=...`: leave unexpected changes untouched and report the path.
+- Cleanup error: report it and retain the path; do not retry with `--force`.
 
-- `REMOVED=...` — cleanup succeeded.
-- `RETAINED_DIRTY=...` — unexpected changes exist; leave them untouched and tell the user the path.
-- A cleanup error — report it and leave the path available for inspection. Never retry with `--force`.
+For a failed/interrupted review or missing/incomplete deliverable, run `cleanup-failed` instead. This clears the active marker but retains the worktree. Report that it can be safely pruned on a future run if still clean.
 
-If the child fails, is interrupted, or never completes its review, run:
+**Only after final verification and lifecycle handling, the parent opens the final HTML once**, using `open` on macOS or `xdg-open` on Linux when a desktop is available. Record the opening attempt in the preserved evidence before launching, so a resumed turn cannot repeat it. Do not reopen after follow-up checks or wording changes unless the user explicitly asks. If opening fails or no desktop is available, return the path and URL without automatic retries. An incomplete review is not opened automatically.
 
-```bash
-"$HELPER" cleanup-failed "<WORKTREE_PATH>"
-```
+## 5. Report the outcome
 
-This clears the active marker but deliberately retains the worktree. Tell the user it will be eligible for safe pruning on a future run if it remains clean.
+Lead with verdict and accurate **blocker / major / minor** counts. Major and minor findings are not “blockers”.
 
-## 4. Final response
+For each blocker/major, return the same five clearly labelled parts used in the HTML: problem, impact, evidence locations (changed versus context), comment location and paste-ready PR comment. Summarise minors briefly.
 
-Lead with the review verdict and state the blocker, major, and minor counts accurately. Do not call major findings blockers.
-
-Present every blocker and major finding separately using this structure:
-
-1. **Finding title and severity**
-2. **Simple explanation** — describe the concrete failure sequence without assuming familiarity with the implementation
-3. **Why it matters** — state the observable user, data, security, performance, or operational impact
-4. **Locations** — list precise file and line ranges, distinguishing changed lines from downstream or pre-existing context
-5. **Where to comment** — identify the best changed-line anchor, or say that it should be a file-level comment
-6. **Suggested PR comment** — provide concise text ready to paste into the review
-
-When a finding crosses files, show the call/data flow that connects them. Do not claim a function is called directly when the trace is indirect. Summarise minor findings more briefly unless the user requests the same detail.
-
-Then include:
-
-- checks/tests run and any validation gaps;
-- the code-map HTML's absolute path and `file://` URL, with a brief description of its visual map, traced flows and grouped inventory; and
-- whether the worktree was removed or retained, with its path when retained.
-
-Do not offer to apply fixes. This skill's deliverable is the reviewed code-map walkthrough and safe lifecycle handling. Do not generate the former standalone findings-only HTML report as an additional deliverable.
+Finish with checks/gaps, the HTML's absolute path and `file://` URL, and whether the worktree was removed or retained (include its path if retained). Describe the page in one sentence. Do not offer to apply fixes.

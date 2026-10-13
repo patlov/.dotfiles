@@ -17,6 +17,31 @@ const QUOTED_ASSIGNMENT =
 const UNQUOTED_ASSIGNMENT =
   /((?:api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|token|client[_-]?secret|secret|password|authorization)\s*(?:=|:)\s*)([^\s,;#}\]"']{12,})/gi;
 
+// Match complete, simple references/lookups, never just a runtime-looking prefix.
+// Bare identifiers and non-this members require a preceding local declaration;
+// otherwise opaque unquoted values (including dotted tokens) remain suspicious.
+const RUNTIME_REFERENCE =
+  /^([A-Za-z_$][\w$]*)((?:\.[A-Za-z_$][\w$]*|\[(?:"[^"\\\r\n]*"|'[^'\\\r\n]*')\]|\([ \t]*\)|\.getItem\([ \t]*(?:"[^"\\\r\n]*"|'[^'\\\r\n]*')[ \t]*\))*)(?=[ \t]*(?:[,;}\r\n]|$))/;
+
+// Also recognize a single call wrapping a storage lookup. Only short string
+// fallbacks are accepted; credential-length literal arguments remain suspicious.
+const WRAPPED_STORAGE_LOOKUP =
+  /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\.getItem\([ \t]*(?:"[^"\\\r\n]*"|'[^'\\\r\n]*')[ \t]*\)(?:[ \t]*\?\?[ \t]*(?:"[^"\\\r\n]{0,11}"|'[^'\\\r\n]{0,11}'))?[ \t]*\)(?=[ \t]*(?:[,;}\r\n]|$))/;
+
+function isRuntimeReference(text: string, valueStart: number): boolean {
+  const expression = text.slice(valueStart);
+  if (WRAPPED_STORAGE_LOOKUP.test(expression)) return true;
+  const reference = expression.match(RUNTIME_REFERENCE);
+  if (!reference) return false;
+
+  const [, root, suffix] = reference;
+  if (suffix.endsWith(")") || (root === "this" && suffix.startsWith("."))) return true;
+
+  const escapedRoot = root.replace(/\$/g, "\\$");
+  const declaration = new RegExp(`\\b(?:const|let|var)\\s+${escapedRoot}\\s*(?:=|:)`);
+  return declaration.test(text.slice(0, valueStart));
+}
+
 function isPlaceholder(value: string): boolean {
   const normalized = value.trim().toLowerCase();
   return (
@@ -47,7 +72,10 @@ export function findSecrets(text: string): SecretMatch[] {
     pattern.lastIndex = 0;
     for (const match of text.matchAll(pattern)) {
       const value = pattern === QUOTED_ASSIGNMENT ? match[3] : match[2];
-      if (value && !isPlaceholder(value)) {
+      const runtimeReference =
+        pattern === UNQUOTED_ASSIGNMENT &&
+        isRuntimeReference(text, match.index! + match[1].length);
+      if (value && !isPlaceholder(value) && !runtimeReference) {
         matches.push({ label: "credential assignment", value });
       }
     }

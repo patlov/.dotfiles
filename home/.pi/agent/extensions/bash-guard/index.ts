@@ -351,11 +351,10 @@ async function promptRunOrAbort(ctx: any, command: string, risk: Risk): Promise<
 	return choice ?? "abort";
 }
 
-// PI_SUBAGENT_DEPTH is 0 (or unset) in the main session and >= 1 in spawned subagent processes.
-// Behaviour branches on this: interactive prompting in the main session, headless hard-block
-// for catastrophic operations in subagents (where stdin is /dev/null and no UI is available).
+// Herdr marks fresh and resumed children with PI_SUBAGENT_ID; older launchers use depth.
 const _subagentDepth = Number(process.env.PI_SUBAGENT_DEPTH ?? "0");
-const _isSubagent = Number.isFinite(_subagentDepth) && _subagentDepth >= 1;
+const _isSubagent = Boolean(process.env.PI_SUBAGENT_ID) ||
+	(Number.isFinite(_subagentDepth) && _subagentDepth >= 1);
 
 // Hard-block patterns for subagent (headless) mode. Criteria: unrecoverable by default AND
 // unlikely to be intentional in an automated context. Fewer false positives over broad coverage —

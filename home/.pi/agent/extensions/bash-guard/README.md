@@ -5,10 +5,11 @@ the session is interactive (main session) or non-interactive (spawned subagent).
 
 ## Modes
 
-Behaviour is determined at registration time via the `PI_SUBAGENT_DEPTH` environment variable,
-which pi-subagents injects into every spawned process.
+Behaviour is determined at registration time. Herdr sets `PI_SUBAGENT_ID` for fresh and
+resumed children. A positive `PI_SUBAGENT_DEPTH` is also recognised for older launchers.
+Children automatically use noninteractive protection without a guard-disabling flag.
 
-### Main session (`PI_SUBAGENT_DEPTH` = 0 or unset) — interactive prompt
+### Main session (no child ID and depth = 0 or unset) — interactive prompt
 
 - Heuristically detects destructive/questionable commands via shell-aware parsing
 - Prompts for **any** `git ...` command (escalates severity for especially risky ones: `git rm`,
@@ -23,10 +24,10 @@ which pi-subagents injects into every spawned process.
 - If aborted, the tool call is blocked and the model receives a clear reason
 - Remembers recently aborted commands for 60 s to prevent retry loops
 
-### Subagent (`PI_SUBAGENT_DEPTH` ≥ 1) — headless hard-block
+### Subagent (child ID set or depth ≥ 1) — noninteractive hard-block
 
-Spawned subagents have no UI (stdin is `/dev/null`), so prompting is impossible. Instead,
-a focused set of catastrophic/unrecoverable operations is hard-blocked with no user interaction:
+Subagents must not wait for approval in their panes. A focused set of
+catastrophic/unrecoverable operations is hard-blocked with no user interaction:
 
 | Pattern | Reason |
 |---|---|
@@ -61,5 +62,16 @@ Auto-discovered from `~/.pi/agent/extensions/bash-guard/`. Run `/reload` in pi.
 ## Notes
 
 - Scope: `bash` tool calls only (`write`/`edit` and user `!` commands are not intercepted).
+- `/bash-guard` toggles main-session approval prompts; `--bash-guard-disabled` starts with
+  prompts disabled. A destructive-command blocklist still applies. Neither changes subagent mode.
 - `--bash-guard-auto-allow`: main-session flag that allows flagged commands when there is no UI
   (e.g. running pi non-interactively). Has no effect in subagent sessions.
+- Protection uses shell-command patterns, not a read-only sandbox.
+
+## Validation
+
+From the dotfiles repository root:
+
+```sh
+node --experimental-strip-types --test home/.pi/agent/extensions/bash-guard/test/*.test.ts
+```

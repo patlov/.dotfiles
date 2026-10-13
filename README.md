@@ -48,6 +48,14 @@ This command links only `home/.pi` into `~/.pi`, reuses Node.js 22.20 or newer w
 
 The Pi configuration includes `pi-extmgr`, Plannotator, `/save-md`, Git editor/hook protections, staged secret scanning, secret cloaking for tool output, and private local voice dictation. MCP uses Pi's built-in support; the external `pi-mcp-adapter` package is not required.
 
+Select `/model router/auto` to plan on `anthropic/claude-opus-5-5`. On each user turn while planning, an authenticated Jev classifier checks whether implementation should begin; explicit implementation approval switches to `openai-codex/gpt-6.1-sol`. Implementation stays on Sol without further classification until `/router plan` restores planning. The footer shows the current phase; phase changes follow the session branch and survive reloads. Tool continuations and retries keep their model. Requires both chat providers and a Jev provider, such as TypeSafe or OpenRouter. The extension lives in `home/.pi/extensions.router.ts` and is linked into the extensions directory; it does not change the default model.
+
+Test the router without live model calls:
+
+```sh
+node --experimental-strip-types --test home/.pi/agent/extensions/router/test/*.test.ts
+```
+
 Local dictation uses SoX plus `whisper.cpp` with the quantized Whisper Large-v3-Turbo model. Press `ctrl+space` to start or stop recording and `ctrl+shift+space` to cancel. The model server starts on the first dictation, stays warm for 30 minutes after activity, and stops when Pi exits. Audio remains on the machine. The installer downloads the checksum-verified 547 MB model into untracked user data under `~/.local/share/pi-local-dictate/`.
 
 Two reusable skills also provide browsable local reports:
@@ -58,6 +66,22 @@ Two reusable skills also provide browsable local reports:
 ```
 
 The generated pages are self-contained and stored under `~/.pi/agent/generated-html/`. The skills are also available through `/skill:architecture-review` and `/skill:generate-html`.
+
+Four opt-in development skills reuse Pi/Herdr and each repository's verification guidance:
+
+```text
+/skill:dev-flow implement ASK-1234. Verify locally; do not push.
+/skill:blast-radius inspect the safety assumptions behind this change.
+/skill:design-arena compare designs for an unresolved architectural decision.
+/skill:prevent-repeat propose enforcement for this recurring agent mistake.
+```
+
+`dev-flow` accepts Linear tickets through an existing integration or pasted implementation briefs.
+It chooses proportionate design and risk checks; small changes do not require subagents.
+The skills grant no publishing, shared-data or deployment permissions. Prevention is proposal-only
+until approved. All four are explicit-invocation skills, not an always-on mode. Run `/reload` after
+linking them. See [development flow](home/.pi/agent/skills/dev-flow/README.md) for usage, the private
+Git evidence helper, verification limits and checks.
 
 ## Update
 

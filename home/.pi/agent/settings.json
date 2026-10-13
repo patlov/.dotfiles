@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.0.3",
+  "lastChangelogVersion": "1.2.0",
   "theme": "ghostty-sync-762fe13d",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
@@ -13,7 +13,9 @@
     "npm:@juicesharp/rpiv-todo",
     "npm:pi-extmgr",
     "npm:@plannotator/pi-extension",
-    "npm:pi-herdr-agents"
+    "npm:pi-herdr-agents",
+    "../../Developer/pi-claude-bridge"
   ],
-  "extensions": []
+  "extensions": [],
+  "deviceId": "5062c5c6-303b-4192-b90c-90727489a6b7"
 }
