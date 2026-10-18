@@ -48,6 +48,8 @@ This command links only `home/.pi` into `~/.pi`, reuses Node.js 22.20 or newer w
 
 The Pi configuration includes `pi-extmgr`, Plannotator, `/save-md`, Git editor/hook protections, staged secret scanning, secret cloaking for tool output, and private local voice dictation. MCP uses Pi's built-in support; the external `pi-mcp-adapter` package is not required.
 
+A local [Claude Code bridge](home/.pi/agent/extensions/pi-claude-bridge/README.md) also provides `claude_task_*` tools for new, visible Claude sessions inside Herdr. It requires a separately installed and authenticated Claude Code CLI and explicit launch confirmation; installing the dotfiles does not launch Claude. Native Claude permissions apply, not Pi's tool/secret guards. Its generated `.claude-bridge/` state is private and ignored by Git; do not publish or symlink it as configuration.
+
 Select `/model router/auto` to plan on `anthropic/claude-opus-5-5`. On each user turn while planning, an authenticated Jev classifier checks whether implementation should begin; explicit implementation approval switches to `openai-codex/gpt-6.1-sol`. Implementation stays on Sol without further classification until `/router plan` restores planning. The footer shows the current phase; phase changes follow the session branch and survive reloads. Tool continuations and retries keep their model. Requires both chat providers and a Jev provider, such as TypeSafe or OpenRouter. The extension lives in `home/.pi/extensions.router.ts` and is linked into the extensions directory; it does not change the default model.
 
 Test the router without live model calls:

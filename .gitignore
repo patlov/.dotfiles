@@ -2,6 +2,7 @@
 nvim.log
 
 # Pi credentials and runtime/generated state
+.claude-bridge/
 home/.pi/agent/auth.json
 home/.pi/agent/bin/
 home/.pi/agent/fff/

@@ -34,22 +34,25 @@ The helper owns lifecycle safety: it prunes only eligible clean review leftovers
 
 ## 3. Launch one leaf reviewer
 
+Use a bare subagent: this skill supplies the reviewer assignment and does not require an installed agent definition or role pack. Omit the `agent` parameter; `reviewer` describes the work, not a named agent to load.
+
 Print this orchestration line before launch:
 
 ```text
-<branch-slug>-review | reviewer | review | <exact-model> | <WORKTREE_PATH>
+<branch-slug>-review | bare | review | <exact-model> | <WORKTREE_PATH>
 ```
 
 Call `subagent` with:
 
-- `agent: "reviewer"`, a short branch-derived name ending in `-review`, and `cwd: WORKTREE_PATH`;
+- a short branch-derived `name` ending in `-review`, and `cwd: WORKTREE_PATH`;
 - the exact selected `model` and `thinking`, with `fork: false` for a fresh session;
-- **no** managed `worktree` argument: the helper already created it;
-- `tools: "read,bash,grep,find,ls,codemode"` when Codemode is available. This explicit override matters: the packaged reviewer defaults omit Codemode. Otherwise use `"read,bash,grep,find,ls"` and disclose the fallback.
+- `systemPrompt: "You are a review-only leaf. Follow the supplied worktree-review skill and reviewer assignment. Do not spawn agents, modify repository files, commit, push, merge, rebase, deploy or clean up the worktree. Write HTML and evidence only outside the repository."`;
+- **no** `agent` or managed `worktree` argument: no named role is needed, and the helper already created the worktree;
+- `tools: "read,bash,grep,find,ls,codemode"` when Codemode is available, otherwise `"read,bash,grep,find,ls"` and disclose the fallback. Set this allowlist explicitly rather than relying on agent defaults.
 
 Keep bash-guard enabled. Herdr sets `PI_SUBAGENT_ID` for fresh and resumed children, which selects noninteractive guard mode: routine review commands run without approval prompts, while the guard's destructive-command blocklist remains active. Do not pass a guard-disabling option or ask the child to run `/bash-guard`. If a required command is blocked, report the validation gap rather than bypassing the guard. The guard is a shell-pattern check, not a read-only sandbox; the reviewer restrictions below still apply.
 
-Give the child the branch, expected target commit, worktree path and this skill path. Require it to read this skill and follow the **Reviewer assignment** and **HTML layout** below. After launching, end the turn; results arrive automatically. Do not poll status or session logs.
+Set `task` to include the branch, expected target commit, worktree path and absolute skill path. Require the child to read this skill and follow the **Reviewer assignment** and **HTML layout** below. The child follows those sections only; the parent owns branch selection, preparation, launch and cleanup. After launching, end the turn; results arrive automatically. Do not poll status or session logs.
 
 ### Reviewer assignment
 

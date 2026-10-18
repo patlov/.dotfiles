@@ -1,0 +1,11 @@
+{
+  "name": "pi-claude-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Upstream-ready visible Claude Code runtime adapter prototype",
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test test/*.test.mjs", "check": "node --check src/adapter.mjs && node --check src/hooks.mjs && node --check src/herdr.mjs && node --check src/hook-relay.mjs" },
+  "peerDependencies": { "@earendil-works/pi-coding-agent": "*", "@earendil-works/pi-ai": "*" },
+  "pi": { "extensions": ["./src/extension.ts"] }
+}
