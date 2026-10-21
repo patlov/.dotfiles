@@ -52,6 +52,12 @@ The parent reviews diffs, runs integration checks and owns any authorised integr
 automatically commit unrelated work or delete a retained worktree. Use the existing managed
 cleanup flow only when explicitly authorised. Stop only services/fixtures owned by the run.
 
+## Private artifacts
+
+Briefs, snapshots, child results and evidence go in the existing session artifact location,
+or a unique directory under the live Pi agent directory; never the product repository or the
+tracked dotfiles source.
+
 ## Action boundary
 
 A skill changes how to carry out an authorised task; it grants no new authority. Read-only

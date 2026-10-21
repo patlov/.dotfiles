@@ -2,7 +2,7 @@
 name: dev-flow
 description: Execute a Linear ticket or implementation brief with proportionate design, verification and risk checks. Use only when explicitly requested.
 disable-model-invocation: true
-compatibility: Pi; Git and Node.js 22+ for change snapshots; Herdr only when delegating
+compatibility: Git and Node.js 22+ for change snapshots; harness specifics in references/execution.md
 ---
 
 # Development flow
@@ -56,8 +56,7 @@ bounded independent work that earns its coordination cost. Keep dependent writes
 Preserve unrelated dirty and untracked work; no blanket stash, reset, cleanup or staging.
 
 For substantial or handed-off work, keep a short private scope/acceptance note, decisions and
-evidence pointers outside the product repository. Use the existing session artifact location,
-or a unique directory under the live Pi agent directory; never the tracked dotfiles source.
+evidence pointers in the private artifact location from [execution](references/execution.md).
 No artifact is needed for a trivial edit. A snapshot pins a review state, not a requirement
 to freeze the checkout for the entire implementation; take a fresh snapshot after deliberate edits.
 

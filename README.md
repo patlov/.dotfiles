@@ -6,6 +6,7 @@ Personal configuration for macOS and Linux, stored in a `home/` tree inspired by
 
 - `home/.config/` — application configuration, including Herdr
 - `home/.pi/agent/` — portable pi settings, skills, extensions, themes, and package manifests
+- `home/.claude/skills/` — Claude Code ports of the opt-in dev-flow pack (`dev-flow`, `blast-radius`, `design-arena`, `prevent-repeat`); shared files are symlinks into the Pi skills, and only `dev-flow/references/execution.md` and `design-arena/SKILL.md` are Claude-specific. Linked by `dot stow`, not `dot install pi`.
 - `home/.zshrc` — Zsh configuration
 - `iterm_profile.json` — iTerm profile export
 
