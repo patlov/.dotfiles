@@ -5,3 +5,7 @@ prefix = "ctrl+a"
 
 [ui]
 status_indicators = "symbols"
+
+[theme]
+name = "catppuccin"
+auto_switch = false

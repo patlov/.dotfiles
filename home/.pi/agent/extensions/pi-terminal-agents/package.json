@@ -1,0 +1,18 @@
+{
+  "name": "pi-terminal-agents",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Rex and Herdr surfaces for the existing Pi subagent supervisor",
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test:rex": "PI_TEST_REX=1 node --experimental-strip-types --test test/rex-live.test.ts"
+  },
+  "dependencies": {
+    "pi-herdr-agents": "3.3.1"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-ai": "*"
+  }
+}

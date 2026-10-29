@@ -2,15 +2,15 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@henryqw/pi-herdr": "^0.5.2",
-    "@juicesharp/rpiv-ask-user-question": "^2.13.9",
-    "@juicesharp/rpiv-todo": "^2.13.9",
+    "@henryqw/pi-herdr": "^0.6.0",
+    "@juicesharp/rpiv-ask-user-question": "^2.15.0",
+    "@juicesharp/rpiv-todo": "^2.15.0",
     "@mobrienv/pi-tidy-tools": "^0.5.4",
     "@ogulcancelik/pi-ghostty-theme-sync": "^0.1.2",
     "@ogulcancelik/pi-session-recall": "^1.0.7",
-    "@plannotator/pi-extension": "^0.28.25",
+    "@plannotator/pi-extension": "^0.28.36",
     "pi-eta": "^0.1.1",
-    "pi-extmgr": "^0.4.1",
+    "pi-extmgr": "^0.4.2",
     "pi-herdr-agents": "^3.3.1"
   }
 }
