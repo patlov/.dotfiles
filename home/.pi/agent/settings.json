@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.5.0",
+  "lastChangelogVersion": "1.5.2",
   "theme": "ghostty-sync-762fe13d",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
