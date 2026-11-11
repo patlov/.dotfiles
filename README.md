@@ -61,7 +61,7 @@ node --experimental-strip-types --test home/.pi/agent/extensions/router/test/*.t
 
 Local dictation uses SoX plus `whisper.cpp` with the quantized Whisper Large-v3-Turbo model. Press `ctrl+space` to start or stop recording and `ctrl+shift+space` to cancel. The model server starts on the first dictation, stays warm for 30 minutes after activity, and stops when Pi exits. Audio remains on the machine. The installer downloads the checksum-verified 547 MB model into untracked user data under `~/.local/share/pi-local-dictate/`.
 
-Two reusable skills also provide browsable local reports:
+Reusable skills also provide browsable local reports:
 
 ```text
 /architecture-review [scope]  # Review blockers, architecture fit, and overengineering
@@ -69,6 +69,19 @@ Two reusable skills also provide browsable local reports:
 ```
 
 The generated pages are self-contained and stored under `~/.pi/agent/generated-html/`. The skills are also available through `/skill:architecture-review` and `/skill:generate-html`.
+
+Isolated branch/PR reviews use supervised Pi leaf reviewers in Herdr or local Rex without changing the invoking checkout. The [terminal-agents wrapper](home/.pi/agent/extensions/pi-terminal-agents/README.md) injects Rex into the existing subagent supervisor; the standalone npm host extension is filtered out to avoid duplicate tools. Restart Pi once after first installation (backend ownership survives `/reload`). Rex defaults to background tabs; Herdr keeps its existing behavior. The wrapper currently supports host version 3.3.1, and Rex reviews use the shared helper's worktrees rather than Herdr-managed provisioning.
+
+```text
+/skill:worktree-review <branch-or-PR-URL> [--fast]
+/skill:batch-worktree-review 123 456 789 [--fast]
+/skill:rex-review 123 456 789 [--fast]  # Dedicated Rex session, one tab per reviewer
+/skill:rex-review --here feature/catalogue  # Review tabs in the original Rex session
+```
+
+`/rex-agents new LABEL`, `/rex-agents select SESSION_ID` and `/rex-agents here` choose the destination for future Rex subagents. Existing children keep their original destinations. The `rex-review` skill restores the original destination after dispatch and retains its separate session for inspection. Completion and cancellation use the normal subagent tools, not terminal-output polling. Rex servers must be local because the supervisor observes local session files.
+
+Batch review launches one agent per unique eligible PR or branch, all concurrently, reuses the single-review standards and safe worktree lifecycle, and opens one HTML index linking verified reports, ranked by review readiness: clean approvals first, then minor fixes, major fixes and blockers. Unknown or validation-gated readiness is shown separately, without implying GitHub mergeability or a dependency-aware merge order. PR inputs require authenticated `gh` and must have heads in the current origin repository and target `main`; branch inputs are compared against `origin/main`. Failed or unsupported targets remain visible as gaps, not clean reviews. Detailed reports follow a concrete example, show the important decision branches, and explain findings as failure sequences; source references, PR comments and audit detail are expandable. Run `/reload` after linking or editing a skill.
 
 Four opt-in development skills reuse Pi/Herdr and each repository's verification guidance:
 

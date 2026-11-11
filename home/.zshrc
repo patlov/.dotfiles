@@ -54,3 +54,48 @@ if [ -f "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/D
 if [[ -d /opt/homebrew/lib ]]; then
   export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}"
 fi
+
+__tfrepo() {
+  git rev-parse --show-toplevel 2>/dev/null || {
+    echo "Run this from inside the infrastructure repository." >&2
+    return 1
+  }
+}
+
+tfinit() {
+  local stage="$1"
+  local region_name="$2"
+  local root="$3"
+  local repo
+
+  repo="$(__tfrepo)" || return 1
+
+  terraform -chdir="${repo}/roots/${root}" init \
+    -backend-config="../../backend-config/${region_name}/${stage}/${root}.hcl"
+}
+
+tfplan() {
+  local stage="$1"
+  local region_name="$2"
+  local root="$3"
+  local repo
+
+  repo="$(__tfrepo)" || return 1
+
+  terraform -chdir="${repo}/roots/${root}" plan \
+    -var-file="../../environments/${region_name}/${stage}/common.tfvars" \
+    -var-file="../../environments/${region_name}/${stage}/${root}.tfvars"
+}
+
+tfapply() {
+  local stage="$1"
+  local region_name="$2"
+  local root="$3"
+  local repo
+
+  repo="$(__tfrepo)" || return 1
+
+  terraform -chdir="${repo}/roots/${root}" apply \
+    -var-file="../../environments/${region_name}/${stage}/common.tfvars" \
+    -var-file="../../environments/${region_name}/${stage}/${root}.tfvars"
+}
